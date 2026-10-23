@@ -1,0 +1,14 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostRow from '../../components/PostRow.astro';
+import { publicPosts, tagCounts, tagSlug, pathTo } from '../../lib/posts';
+export async function getStaticPaths() {
+  const posts = await publicPosts();
+  return tagCounts(posts).map(([tag]) => ({ params: { tag: tagSlug(tag) }, props: { tag, posts: posts.filter(post => post.data.tags.includes(tag)) } }));
+}
+const { tag, posts } = Astro.props;
+---
+<Base title={'主题：' + tag} active="tags">
+  <header class="page-intro"><a class="back-link" href={pathTo('tags/')}>← 所有主题</a><p class="eyebrow">TOPIC / {posts.length} 篇文章</p><h1><span class="accent">#</span> {tag}</h1><p>沿着这个主题，继续探索。</p></header>
+  <div class="narrow-list">{posts.map(post => <PostRow post={post} />)}</div>
+</Base>

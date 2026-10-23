@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostRow from '../../components/PostRow.astro';
+import { publicPosts } from '../../lib/posts';
+const posts = await publicPosts();
+const years = [...new Set(posts.map(post => post.data.date.getUTCFullYear()))];
+---
+<Base title="文章归档" active="posts">
+  <header class="page-intro"><p class="eyebrow">THE ARCHIVE</p><h1>每一次探索，都有迹可循。</h1><p>关于代码、工具与工程实践的 {posts.length} 篇记录。</p></header>
+  <div class="archive-layout">{years.map(year => <section class="archive-year"><h2>{year}<span>{posts.filter(post => post.data.date.getUTCFullYear() === year).length} 篇</span></h2><div>{posts.filter(post => post.data.date.getUTCFullYear() === year).map(post => <PostRow post={post} />)}</div></section>)}</div>
+  {posts.length === 0 && <div class="empty-state"><h2>文章正在酝酿中。</h2><p>稍后回来，看看新的探索。</p></div>}
+</Base>

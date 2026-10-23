@@ -1,0 +1,80 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { pathTo } from '../lib/posts';
+import { siteConfig } from '../../site.config.mjs';
+interface Props { title?: string; description?: string; active?: string; article?: boolean; noindex?: boolean; }
+const { title, description = siteConfig.description, active = '', article = false, noindex = false } = Astro.props;
+const pageTitle = title ? title + ' · ' + siteConfig.title : siteConfig.title + ' · ' + siteConfig.author;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const nav = [{ label: '首页', path: '', id: 'home' }, { label: '文章', path: 'posts/', id: 'posts' }, { label: '标签', path: 'tags/', id: 'tags' }, { label: '关于', path: 'about/', id: 'about' }];
+---
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f6f2" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={siteConfig.author} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={pathTo('favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title={siteConfig.title} href={pathTo('rss.xml')} />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={siteConfig.title} />
+    <meta property="og:locale" content="zh_CN" />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem('blog-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到正文</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href={pathTo()} aria-label={siteConfig.title + '，首页'}><span class="brand-mark" aria-hidden="true">技<span>.</span></span><span>{siteConfig.title}<small>by {siteConfig.author}</small></span></a>
+        <nav class="main-nav" aria-label="主导航">{nav.map(item => <a href={pathTo(item.path)} aria-current={active === item.id ? 'page' : undefined}>{item.label}</a>)}</nav>
+        <div class="header-actions">
+          <a class="icon-button search-shortcut" href={pathTo('search/')} aria-label="搜索文章"><Icon name="search" /><kbd>/</kbd></a>
+          <button class="icon-button" id="theme-toggle" type="button" aria-label="切换深色模式"><span class="icon-light"><Icon name="moon" /></span><span class="icon-dark"><Icon name="sun" /></span></button>
+          <a class="icon-button github-header" href={siteConfig.github} target="_blank" rel="noopener noreferrer" aria-label="在新标签页打开 GitHub"><Icon name="github" /></a>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="site-main" tabindex="-1"><slot /></main>
+    <footer class="site-footer">
+      <div><a class="footer-title" href={pathTo()}>{siteConfig.title}<span aria-hidden="true"> / </span><span>{siteConfig.author}</span></a><p>把想法写下来，让知识慢慢生长。</p></div>
+      <div class="footer-right"><a href={pathTo('rss.xml')}><Icon name="rss" size={15} /> RSS 订阅</a><span>© {new Date().getFullYear()} {siteConfig.author}</span></div>
+    </footer>
+    <script>
+      const toggle = document.querySelector<HTMLButtonElement>('#theme-toggle');
+      function updateLabel() {
+        const dark = document.documentElement.dataset.theme === 'dark';
+        toggle?.setAttribute('aria-label', dark ? '切换浅色模式' : '切换深色模式');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#171c1b' : '#f7f6f2');
+      }
+      updateLabel();
+      toggle?.addEventListener('click', () => {
+        const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        try { localStorage.setItem('blog-theme', theme); } catch {}
+        updateLabel();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+        const target = event.target as HTMLElement;
+        if (target.matches('input, textarea, select') || target.isContentEditable) return;
+        const link = document.querySelector<HTMLAnchorElement>('.search-shortcut');
+        if (link) { event.preventDefault(); window.location.assign(link.href); }
+      });
+    </script>
+  </body>
+</html>

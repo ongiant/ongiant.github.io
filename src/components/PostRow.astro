@@ -1,0 +1,21 @@
+---
+import Icon from './Icon.astro';
+import { postUrl, tagUrl, shortDate, readingMinutes, type Post } from '../lib/posts';
+interface Props { post: Post; index?: number; }
+const { post, index } = Astro.props;
+---
+<article class="post-row">
+  <div class="post-row-date">
+    <time datetime={post.data.date.toISOString()}>{shortDate(post.data.date)}</time>
+    <span>{readingMinutes(post.body)} 分钟阅读</span>
+  </div>
+  <div class="post-row-content">
+    <div class="post-row-heading">
+      <h3><a href={postUrl(post)}>{post.data.title}</a></h3>
+      <a class="post-arrow" href={postUrl(post)} aria-label={'阅读：' + post.data.title}><Icon name="arrow" size={23} /></a>
+    </div>
+    <p>{post.data.description}</p>
+    <div class="post-tags">{post.data.tags.map(tag => <a href={tagUrl(tag)}>{tag}</a>)}{post.data.example && <span class="example-label">示例文章</span>}</div>
+  </div>
+  {index !== undefined && <span class="post-number" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>}
+</article>

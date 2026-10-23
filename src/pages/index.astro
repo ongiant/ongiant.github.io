@@ -1,0 +1,45 @@
+---
+import Base from '../layouts/Base.astro';
+import { siteConfig } from '../../site.config.mjs';
+import Icon from '../components/Icon.astro';
+import PostRow from '../components/PostRow.astro';
+import { publicPosts, tagCounts, pathTo, postUrl, tagUrl, shortDate, readingMinutes } from '../lib/posts';
+const posts = await publicPosts();
+const featured = posts.find(post => post.data.featured) || posts[0];
+const tags = tagCounts(posts);
+---
+<Base active="home">
+  <section class="hero">
+    <div class="hero-content">
+      <p class="eyebrow"><span class="status-dot"></span> A PERSONAL TECH JOURNAL</p>
+      <h1>在代码之间，<br />留下一些<span class="hero-accent">思考。</span></h1>
+      <p class="hero-description">记录技术探索与工程实践，<br class="desktop-break" />把零散的发现，整理成可以重读的文字。</p>
+      <div class="hero-links"><a class="text-link" href={pathTo('posts/')}>开始阅读 <span aria-hidden="true">↗</span></a><a href={pathTo('about/')} class="muted-link">关于这个博客 <span aria-hidden="true">→</span></a></div>
+    </div>
+    <div class="hero-illustration" aria-hidden="true">
+      <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div>
+      <span class="orbit-label top-label">WRITE · BUILD · REFLECT</span>
+      <div class="code-note"><div class="code-note-bar"><span></span><span></span><span></span><small>notes.ts</small></div><div class="code-note-body"><span class="code-comment">// 把好奇心写成代码</span><br /><span class="code-purple">const</span> journal = &#123;<br />&nbsp; learn: <span class="code-string">'something new'</span>,<br />&nbsp; build: <span class="code-string">'something useful'</span>,<br />&nbsp; share: <span class="code-purple">true</span><br />&#125;;<br /><br /><span class="code-comment">// 每一篇，都是一个新的起点</span><br /><span class="code-orange">keepExploring</span>(journal);<span class="cursor"></span></div></div>
+      <span class="orbit-plus plus-one">+</span><span class="orbit-plus plus-two">+</span><span class="orbit-label bottom-label">IDEAS, COMMITTED.</span>
+    </div>
+  </section>
+  <div class="home-grid">
+    <section class="articles-column">
+      {featured && <a class="featured-post" href={postUrl(featured)}>
+        <div class="featured-top"><span class="eyebrow">从这里读起</span><Icon name="arrow" size={25} /></div>
+        <h2>{featured.data.title}</h2><p>{featured.data.description}</p>
+        <div class="featured-meta"><span>{shortDate(featured.data.date)}</span><span>·</span><span>{readingMinutes(featured.body)} 分钟阅读</span>{featured.data.example && <span class="featured-example">示例文章</span>}</div>
+        <div class="featured-decoration" aria-hidden="true">{'{ }'}</div>
+      </a>}
+      <div class="section-heading"><h2>最近的文章<span class="section-count">{String(posts.length).padStart(2, '0')}</span></h2><a href={pathTo('posts/')} class="muted-link">查看全部 <span aria-hidden="true">→</span></a></div>
+      <div class="post-list">{posts.slice(0, 5).map((post, index) => <PostRow post={post} index={index} />)}</div>
+      {posts.length === 0 && <div class="empty-state"><h3>第一篇文章，正在路上。</h3><p>新的探索会在这里留下记录。</p></div>}
+      <a class="all-posts-link" href={pathTo('posts/')}>走进文章归档 <span aria-hidden="true">→</span></a>
+    </section>
+    <aside class="home-sidebar">
+      <div class="side-note"><p class="eyebrow">ABOUT THIS SPACE</p><div class="mini-mark" aria-hidden="true">技<span>.</span></div><h2>你好，我是 {siteConfig.author}。</h2><p>这里存放技术笔记、实践中的发现，以及那些值得多想一步的问题。</p><a class="text-link" href={pathTo('about/')}>再多了解一点 <span aria-hidden="true">↗</span></a></div>
+      <div class="side-topics"><div class="sidebar-heading"><h2>探索主题</h2><span>TOPICS</span></div>{tags.slice(0, 6).map(([tag, count]) => <a class="topic-link" href={tagUrl(tag)}><span><span class="topic-hash">#</span> {tag}</span><span>{String(count).padStart(2, '0')} <span aria-hidden="true">↗</span></span></a>)}</div>
+      <div class="rss-note"><Icon name="rss" size={23} /><h2>慢慢写，慢慢读。</h2><p>通过 RSS 订阅，<br />让新文章自己找到你。</p><a class="text-link" href={pathTo('rss.xml')}>订阅更新 <span aria-hidden="true">↗</span></a></div>
+    </aside>
+  </div>
+</Base>

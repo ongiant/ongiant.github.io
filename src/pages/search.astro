@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { pathTo } from '../lib/posts';
+---
+<Base title="搜索文章" noindex>
+  <header class="page-intro"><p class="eyebrow">FIND A THOUGHT</p><h1>你在寻找什么？</h1><p>搜索标题、主题，或记忆中的一句话。</p></header>
+  <section class="search-page" data-index-url={pathTo('search-index.json')}>
+    <form class="search-form" role="search"><label class="sr-only" for="search-input">搜索文章</label><Icon name="search" size={24} /><input id="search-input" name="q" type="search" placeholder="输入关键词，找找看…" autocomplete="off" /><button type="submit">搜索 <span aria-hidden="true">↵</span></button></form>
+    <p class="search-status" id="search-status" aria-live="polite">支持标题、标签与正文搜索。</p>
+    <div id="search-results"></div>
+    <noscript><p>搜索功能需要启用 JavaScript。你也可以<a href={pathTo('posts/')}>浏览全部文章</a>。</p></noscript>
+  </section>
+  <script>
+    interface SearchPost { title: string; description: string; tags: string[]; body: string; url: string; date: string; }
+    const container = document.querySelector<HTMLElement>('.search-page')!;
+    const input = document.querySelector<HTMLInputElement>('#search-input')!;
+    const form = document.querySelector<HTMLFormElement>('.search-form')!;
+    const status = document.querySelector<HTMLElement>('#search-status')!;
+    const results = document.querySelector<HTMLElement>('#search-results')!;
+    let indexPromise: Promise<SearchPost[]> | undefined;
+    let request = 0;
+    async function search() {
+      const currentRequest = ++request;
+      const query = input.value.trim().toLocaleLowerCase();
+      const url = new URL(window.location.href);
+      if (query) url.searchParams.set('q', input.value.trim());
+      else url.searchParams.delete('q');
+      window.history.replaceState({}, '', url);
+      results.replaceChildren();
+      if (!query) { status.textContent = '支持标题、标签与正文搜索。'; return; }
+      status.textContent = '正在查找…';
+      try {
+        indexPromise ??= fetch(container.dataset.indexUrl!).then(response => {
+          if (!response.ok) throw new Error('Search index unavailable');
+          return response.json() as Promise<SearchPost[]>;
+        });
+        const posts = await indexPromise;
+        if (currentRequest !== request) return;
+        const terms = query.split(/\s+/);
+        const matches = posts.map(post => {
+          const title = post.title.toLocaleLowerCase();
+          const tags = post.tags.join(' ').toLocaleLowerCase();
+          const combined = [title, tags, post.description, post.body].join(' ').toLocaleLowerCase();
+          if (!terms.every(term => combined.includes(term))) return null;
+          const score = terms.reduce((total, term) => total + (title.includes(term) ? 10 : 0) + (tags.includes(term) ? 5 : 0), 0);
+          return { post, score };
+        }).filter((item): item is { post: SearchPost; score: number } => item !== null).sort((a, b) => b.score - a.score);
+        status.textContent = matches.length ? '找到 ' + matches.length + ' 篇相关文章' : '没有找到相关文章。换个关键词试试？';
+        matches.forEach(({ post }) => {
+          const article = document.createElement('article');
+          article.className = 'search-result';
+          const date = document.createElement('time');
+          date.textContent = post.date;
+          const heading = document.createElement('h2');
+          const link = document.createElement('a');
+          link.href = post.url;
+          link.textContent = post.title;
+          heading.append(link);
+          const description = document.createElement('p');
+          description.textContent = post.description;
+          const tags = document.createElement('span');
+          tags.className = 'result-tags';
+          tags.textContent = post.tags.map(tag => '# ' + tag).join('   ');
+          article.append(date, heading, description, tags);
+          results.append(article);
+        });
+      } catch {
+        if (currentRequest !== request) return;
+        status.textContent = '搜索暂时不可用，请稍后重试，或从文章归档继续阅读。';
+        indexPromise = undefined;
+      }
+    }
+    let debounce: ReturnType<typeof setTimeout>;
+    input.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(search, 150); });
+    form.addEventListener('submit', event => { event.preventDefault(); clearTimeout(debounce); void search(); });
+    input.value = new URLSearchParams(window.location.search).get('q') || '';
+    if (input.value) void search();
+    input.focus({ preventScroll: true });
+  </script>
+</Base>

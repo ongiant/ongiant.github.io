@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { siteConfig } from '../../site.config.mjs';
+import { pathTo } from '../lib/posts';
+---
+<Base title="关于" active="about">
+  <header class="page-intro"><p class="eyebrow">A LITTLE ABOUT THIS SPACE</p><h1>你好，我是 {siteConfig.author}<span class="accent">。</span></h1><p>在这里，把学习与思考变成可以分享的记录。</p></header>
+  <div class="about-layout">
+    <aside class="about-card"><div class="about-monogram" aria-hidden="true">o<span>.</span></div><h2>{siteConfig.author}</h2><p>保持好奇，持续记录。</p><a class="text-link" href={siteConfig.github} target="_blank" rel="noopener noreferrer"><Icon name="github" size={18} /> GitHub <span aria-hidden="true">↗</span></a></aside>
+    <div class="prose about-prose"><h2>为什么有这个博客</h2><p>{siteConfig.about}</p><p>有些问题在解决之后，很快就会忘记；有些知识，只有重新组织成文字，才算真正理解。这个博客希望为它们留一个位置。</p><h2>你会在这里读到什么</h2><ul><li>能够复用的技术笔记与工具使用方法。</li><li>从具体问题出发的排查过程与工程实践。</li><li>关于学习、写作与构建软件的思考。</li></ul><h2>保持联系</h2><p>你可以在 <a href={siteConfig.github} target="_blank" rel="noopener noreferrer">GitHub</a> 找到我，也可以通过 <a href={pathTo('rss.xml')}>RSS</a> 订阅新文章。谢谢你来这里阅读。</p><p class="about-footnote">这个小站会随着新的学习与实践，慢慢生长。</p></div>
+  </div>
+</Base>

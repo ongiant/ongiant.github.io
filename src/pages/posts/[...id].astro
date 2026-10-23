@@ -1,0 +1,66 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { publicPosts, postUrl, pathTo, tagUrl, shortDate, readingMinutes } from '../../lib/posts';
+import { siteConfig } from '../../../site.config.mjs';
+export async function getStaticPaths() {
+  const posts = await publicPosts();
+  return posts.map((post, index) => ({ params: { id: post.id }, props: { post, next: posts[index + 1], previous: posts[index - 1] } }));
+}
+const { post, next, previous } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter(heading => heading.depth === 2 || heading.depth === 3);
+---
+<Base title={post.data.title} description={post.data.description} active="posts" article>
+  <meta slot="head" property="article:published_time" content={post.data.date.toISOString()} />
+  <header class="article-header">
+    <a class="back-link" href={pathTo('posts/')}>← 返回文章</a>
+    <div class="article-tags">{post.data.tags.map(tag => <a href={tagUrl(tag)}>{tag}</a>)}{post.data.example && <span class="example-label">示例文章</span>}</div>
+    <h1>{post.data.title}</h1>
+    <p class="article-description">{post.data.description}</p>
+    <div class="article-meta"><span class="author-dot">{siteConfig.author.slice(0, 1)}</span><span>{siteConfig.author}</span><span class="meta-divider"></span><time datetime={post.data.date.toISOString()}>{shortDate(post.data.date)}</time><span>·</span><span>{readingMinutes(post.body)} 分钟阅读</span></div>
+  </header>
+  <div class="article-layout">
+    <div class="article-body">
+      <article class="prose"><Content /></article>
+      <div class="article-end"><span aria-hidden="true">◇</span><p>感谢阅读，愿这些记录对你有所帮助。</p><a href={pathTo('rss.xml')}><Icon name="rss" size={16} /> RSS 订阅</a></div>
+      <nav class="article-pagination" aria-label="相邻文章">{next ? <a href={postUrl(next)}><span>← 更早的记录</span><strong>{next.data.title}</strong></a> : <span></span>}{previous && <a href={postUrl(previous)}><span>更新的记录 →</span><strong>{previous.data.title}</strong></a>}</nav>
+    </div>
+    {toc.length > 0 && <aside class="article-toc"><nav aria-label="文章目录"><p class="eyebrow">ON THIS PAGE</p><h2>文章目录</h2><ol>{toc.map(heading => <li class:list={['toc-item', { 'toc-nested': heading.depth === 3 }]}><a href={'#' + heading.slug}>{heading.text}</a></li>)}</ol><a class="toc-back" href="#main">↑ 回到顶部</a></nav></aside>}
+  </div>
+  <script>
+    document.querySelectorAll<HTMLElement>('.prose pre').forEach(pre => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'copy-code';
+      button.textContent = '复制';
+      button.setAttribute('aria-label', '复制代码');
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(pre.querySelector('code')?.textContent || '');
+          button.textContent = '已复制';
+          setTimeout(() => { button.textContent = '复制'; }, 1800);
+        } catch {
+          button.textContent = '请手动选择复制';
+          setTimeout(() => { button.textContent = '复制'; }, 2500);
+        }
+      });
+      pre.append(button);
+    });
+    if ('IntersectionObserver' in window) {
+      const links = [...document.querySelectorAll<HTMLAnchorElement>('.article-toc li a')];
+      const observer = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          links.forEach(link => {
+            const current = decodeURIComponent(link.hash.slice(1)) === entry.target.id;
+            if (current) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+        }
+      }, { rootMargin: '-10% 0px -65% 0px' });
+      document.querySelectorAll('.prose h2, .prose h3').forEach(heading => observer.observe(heading));
+    }
+  </script>
+</Base>
